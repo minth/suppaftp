@@ -118,8 +118,15 @@ impl From<TlsStream<TcpStream>> for TlsStreamWrapper {
 impl Drop for TlsStreamWrapper {
     fn drop(&mut self) {
         if self.ssl_shutdown {
+            //Send shutdown signal
             if let Err(err) = self.stream.shutdown() {
                 error!("Failed to shutdown stream: {}", err);
+            }
+
+            //Read to cleanly shutdown stream
+            let mut buffer = Vec::new();
+            if let Err(err) = self.stream.read_to_end(&mut buffer) {
+                error!("Failed to receive shutdown signal {}", err);
             } else {
                 debug!("TLS Stream shut down");
             }
